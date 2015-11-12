@@ -33,6 +33,7 @@ CONFIG_IRQ_WORK=y
 #
 CONFIG_EXPERIMENTAL=y
 CONFIG_BROKEN_ON_SMP=y
+CONFIG_SMP=y
 CONFIG_INIT_ENV_ARG_LIMIT=32
 CONFIG_CROSS_COMPILE=""
 CONFIG_LOCALVERSION=""
@@ -470,10 +471,10 @@ CONFIG_ALIGNMENT_TRAP=y
 # CONFIG_USE_OF is not set
 CONFIG_ZBOOT_ROM_TEXT=0x0
 CONFIG_ZBOOT_ROM_BSS=0x0
-CONFIG_CMDLINE="androidboot.console=ttyO0,115200n8 rw init=/init videoout=omap24xxvout omap_vout_mod.video1_numbuffers=6 omap_vout_mod.vid1_static_vrfb_alloc=y omap_vout_mod.video2_numbuffers=6 omap_vout_mod.vid2_static_vrfb_alloc=y omapfb.vram=0:8M no_console_suspend"
-CONFIG_CMDLINE_FROM_BOOTLOADER=y
+CONFIG_CMDLINE="androidboot.console=ttyO0,115200n8 rw init=/init videoout=omap24xxvout omap_vout_mod.video1_numbuffers=6 omap_vout_mod.vid1_static_vrfb_alloc=y omap_vout_mod.video2_numbuffers=6 omap_vout_mod.vid2_static_vrfb_alloc=y omapfb.vram=0:8M no_console_suspend androidboot.selinux=permissive androidboot.hardware=encore"
+# CONFIG_CMDLINE_FROM_BOOTLOADER=y
 # CONFIG_CMDLINE_EXTEND is not set
-# CONFIG_CMDLINE_FORCE is not set
+CONFIG_CMDLINE_FORCE=y
 # CONFIG_XIP_KERNEL is not set
 # CONFIG_KEXEC is not set
 # CONFIG_CRASH_DUMP is not set
@@ -2663,11 +2664,12 @@ CONFIG_ARM_UNWIND=y
 CONFIG_KEYS=y
 # CONFIG_KEYS_DEBUG_PROC_KEYS is not set
 # CONFIG_SECURITY_DMESG_RESTRICT is not set
-# CONFIG_SECURITY is not set
+# drm CONFIG_SECURITY is a problem...
+CONFIG_SECURITY=y
 # CONFIG_SECURITYFS is not set
+CONFIG_SECURITY_NETWORK=y
 # CONFIG_SECURITY_MIDDLEWARE_COMPONENT is not set
 CONFIG_DEFAULT_SECURITY_DAC=y
-CONFIG_DEFAULT_SECURITY=""
 CONFIG_CRYPTO=y
 CONFIG_SECURITY_SELINUX=y
 # CONFIG_SECURITY_SELINUX_BOOTPARAM is not set
@@ -2677,8 +2679,9 @@ CONFIG_SECURITY_SELINUX_AVC_STATS=y
 CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=1
 # CONFIG_SECURITY_SELINUX_POLICYDB_VERSION_MAX is not set
 # CONFIG_TF_CRYPTO_RNG is not set
+CONFIG_TF_ZEBRA=y
 # drm CONFIG_SECURITY_MIDDLEWARE_COMPONENT was unset for encore.
-# Acclaim sets it. 
+# Acclaim sets it, but boots and runs with it not set.
 # CONFIG_SECURITY_MIDDLEWARE_COMPONENT is not set
 # CONFIG_SMC_KERNEL_CRYPTO is not set
 CONFIG_SECURE_TRACE=y
