@@ -206,7 +206,7 @@ static struct omap_cpufreq_platform_data cpufreq_pdata = {
 #ifdef CONFIG_ENCORE_MPU_STOCK
 	.max_nominal_freq = 800000,
 #else
-	.max_nominal_freq = 1000000,
+	.max_nominal_freq = 1200000,
 #endif
 };
 
