@@ -471,7 +471,8 @@ CONFIG_ALIGNMENT_TRAP=y
 # CONFIG_USE_OF is not set
 CONFIG_ZBOOT_ROM_TEXT=0x0
 CONFIG_ZBOOT_ROM_BSS=0x0
-CONFIG_CMDLINE="androidboot.console=ttyO0,115200n8 rw init=/init videoout=omap24xxvout omap_vout_mod.video1_numbuffers=6 omap_vout_mod.vid1_static_vrfb_alloc=y omap_vout_mod.video2_numbuffers=6 omap_vout_mod.vid2_static_vrfb_alloc=y omapfb.vram=0:8M no_console_suspend androidboot.selinux=disabled androidboot.hardware=encore"
+CONFIG_CMDLINE="androidboot.console=ttyO0,115200n8 rw init=/init videoout=omap24xxvout omap_vout_mod.video1_numbuffers=6 omap_vout_mod.vid1_static_vrfb_alloc=y omap_vout_mod.video2_numbuffers=6 omap_vout_mod.vid2_static_vrfb_alloc=y omapfb.vram=0:8M no_console_suspend androidboot.selinux=permissive"
+
 # CONFIG_CMDLINE_FROM_BOOTLOADER=y
 # CONFIG_CMDLINE_EXTEND is not set
 CONFIG_CMDLINE_FORCE=y
@@ -2681,7 +2682,7 @@ CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=1
 # CONFIG_TF_CRYPTO_RNG is not set
 CONFIG_TF_ZEBRA=y
 # drm CONFIG_SECURITY_MIDDLEWARE_COMPONENT was unset for encore.
-# Acclaim sets it, but boots and runs with it not set.
+# Acclaim sets it. 
 # CONFIG_SECURITY_MIDDLEWARE_COMPONENT is not set
 # CONFIG_SMC_KERNEL_CRYPTO is not set
 CONFIG_SECURE_TRACE=y
