@@ -3,6 +3,8 @@
 struct sk_buff;
 struct nlmsghdr;
 
+#define SOCK_DESTROY_BACKPORT 21
+
 struct sock_diag_req {
 	__u8	sdiag_family;
 	__u8	sdiag_protocol;
@@ -11,6 +13,7 @@ struct sock_diag_req {
 struct sock_diag_handler {
 	__u8 family;
 	int (*dump)(struct sk_buff *skb, struct nlmsghdr *nlh);
+	int (*destroy)(struct sk_buff *skb, struct nlmsghdr *nlh);
 };
 
 int sock_diag_register(struct sock_diag_handler *h);
@@ -20,4 +23,5 @@ void sock_diag_register_inet_compat(int (*fn)(struct sk_buff *skb, struct nlmsgh
 void sock_diag_unregister_inet_compat(int (*fn)(struct sk_buff *skb, struct nlmsghdr *nlh));
 
 extern struct sock *sock_diag_nlsk;
+int sock_diag_destroy(struct sock *sk, int err);
 #endif
