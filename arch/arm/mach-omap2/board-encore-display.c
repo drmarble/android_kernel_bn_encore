@@ -21,6 +21,7 @@
 #include <linux/delay.h>
 
 #include <video/omapdss.h>
+#include <video/omap-panel-boxer.h>
 #include <plat/mcspi.h>
 #include <plat/omap-pm.h>
 #include <plat/board.h>
@@ -32,10 +33,6 @@
 #define LCD_BACKLIGHT_EN_EVT2           47
 
 #define DEFAULT_BACKLIGHT_BRIGHTNESS    105
-
-struct boxer_panel_data {
-	struct regulator *vlcd;
-};
 
 static void boxer_backlight_set_power(struct omap_pwm_led_platform_data *self, int on_off)
 {
@@ -84,18 +81,6 @@ static void __init boxer_backlight_init(void)
         gpio_set_value(LCD_CABC1_GPIO,0);
 }
 
-static int encore_panel_enable_lcd(struct omap_dss_device *dssdev)
-{
-	boxer_backlight_set_power(NULL, 1);
-
-	return 0;
-}
-
-static void encore_panel_disable_lcd(struct omap_dss_device *dssdev)
-{
-	boxer_backlight_set_power(NULL, 0);
-}
-
 static struct boxer_panel_data boxer_panel;
 
 static struct omap_dss_device evt_lcd_device = {
@@ -105,6 +90,72 @@ static struct omap_dss_device evt_lcd_device = {
 	.phy.dpi.data_lines = 24,
 	.channel = OMAP_DSS_CHANNEL_LCD,
 	.data = &boxer_panel,
+	.panel = {
+		.config = OMAP_DSS_LCD_TFT | OMAP_DSS_LCD_IVS |
+			  OMAP_DSS_LCD_IHS | OMAP_DSS_LCD_IPC,
+		.width_in_um = 153000,
+		.height_in_um = 90000,
+		/*
+		 * Panel timing information.
+		 *
+		 * Each tick of the pixel clock can convey information about
+		 * one pixel.  To separate individual lines and frames, though,
+		 * we need to add quiet periods in between, and to make it easy
+		 * to find the beginning of a line, we stick a sync pulse in
+		 * the middle of the silence.  The quiet period before the sync
+		 * pulse is the "front porch", and the one after it is the
+		 * "back porch".
+		 *
+		 * Effectively, then,
+		 *
+		 * (pixel clock in Hz) =
+		 * (x_res+hfp+hsw+hbp) * (y_res+vfp+vsw+vbp) * (refresh rate)
+		 *
+		 * In other words, the specific values for sync pulse widths
+		 * and front/back porches, along with the desired resolution
+		 * and pixel clock, determine the refresh rate of the screen.
+		 *
+		 * See http://en.wikipedia.org/wiki/Analog_television#Structure_of_a_video_signal
+		 * for more information.
+		 */
+		.timings = {
+			.x_res		= 1024,
+			.y_res		= 600,
+
+#ifdef CONFIG_ENCORE_DEFAULT_REFRESH_54HZ
+			/* 1024x600@54Hz w/ 4 FCLK/PCLK allowed */
+			.pixel_clock	= 43200, /* in kHz */
+			.hfp		= 64,	/* horiz. "front porch" */
+			.hsw		= 30,	/* horiz. sync pulse width */
+			.hbp		= 132,	/* horiz. "back porch" */
+			.vfp		= 12,	/* vert. "front porch" */
+			.vsw		= 8,	/* vert. sync pulse width */
+			.vbp		= 20,	/* vert. "back porch" */
+#endif
+
+#ifdef CONFIG_ENCORE_DEFAULT_REFRESH_60HZ
+			/* 1024x600@60Hz w/ 4 FCLK/PCLK allowed */
+			.pixel_clock	= 43200, /* in kHz */
+			.hfp		= 34,	/* horiz. "front porch" */
+			.hsw		= 18,	/* horiz. sync pulse width */
+			.hbp		= 49,	/* horiz. "back porch" */
+			.vfp		= 12,	/* vert. "front porch" */
+			.vsw		= 8,	/* vert. sync pulse width */
+			.vbp		= 20,	/* vert. "back porch" */
+#endif
+
+#ifdef CONFIG_ENCORE_DEFAULT_REFRESH_90HZ
+			/* 1024x600@90Hz */
+			.pixel_clock	= 72000, /* in kHz */
+			.hfp		= 84,	/* horiz. "front porch" */
+			.hsw		= 36,	/* horiz. sync pulse width */
+			.hbp		= 106,	/* horiz. "back porch" */
+			.vfp		= 12,	/* vert. "front porch" */
+			.vsw		= 8,	/* vert. sync pulse width */
+			.vbp		= 20,	/* vert. "back porch" */
+#endif
+		},
+	},
 };
 
 static struct omap_dss_device *evt_dss_devices[] = {
@@ -141,4 +192,3 @@ void __init encore_display_init(void)
         omap_display_init(&evt_dss_data);
 
 }
-

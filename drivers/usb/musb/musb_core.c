@@ -2160,7 +2160,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
 	if (is_otg_enabled(musb) || is_host_enabled(musb))
 		wake_lock_init(&musb->musb_wakelock, WAKE_LOCK_SUSPEND,
 						"musb_autosuspend_wake_lock");
-
 	pm_runtime_put(musb->controller);
 
 	status = musb_init_debugfs(musb);

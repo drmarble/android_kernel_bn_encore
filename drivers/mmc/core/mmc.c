@@ -95,6 +95,7 @@ static int mmc_decode_cid(struct mmc_card *card)
 		card->cid.prod_name[3]	= UNSTUFF_BITS(resp, 72, 8);
 		card->cid.prod_name[4]	= UNSTUFF_BITS(resp, 64, 8);
 		card->cid.prod_name[5]	= UNSTUFF_BITS(resp, 56, 8);
+		card->cid.fwrev		= UNSTUFF_BITS(resp, 48, 8);
 		card->cid.serial	= UNSTUFF_BITS(resp, 16, 32);
 		card->cid.month		= UNSTUFF_BITS(resp, 12, 4);
 		card->cid.year		= UNSTUFF_BITS(resp, 8, 4) + 1997;
@@ -353,6 +354,7 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
 		ext_csd[EXT_CSD_SEC_FEATURE_SUPPORT];
 	card->ext_csd.raw_trim_mult =
 		ext_csd[EXT_CSD_TRIM_MULT];
+	card->ext_csd.raw_partition_support = ext_csd[EXT_CSD_PARTITION_SUPPORT];
 	if (card->ext_csd.rev >= 4) {
 		/*
 		 * Enhanced area feature support -- check whether the eMMC
@@ -405,6 +407,7 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
 	if (card->ext_csd.rev >= 5)
 		card->ext_csd.rel_param = ext_csd[EXT_CSD_WR_REL_PARAM];
 
+	card->ext_csd.raw_erased_mem_count = ext_csd[EXT_CSD_ERASED_MEM_CONT];
 	if (ext_csd[EXT_CSD_ERASED_MEM_CONT])
 		card->erased_byte = 0xFF;
 	else
@@ -529,6 +532,36 @@ static struct device_type mmc_type = {
 	.groups = mmc_attr_groups,
 };
 
+static const struct mmc_fixup mmc_fixups[] = {
+	/*
+	 * There is a bug in some Samsung emmc chips where the wear leveling
+	 * code can insert 32 Kbytes of zeros into the storage.  We can patch
+	 * the firmware in such chips each time they are powered on to prevent
+	 * the bug from occurring.  Only apply this patch to a particular
+	 * revision of the firmware of the specified chips.  Date doesn't
+	 * matter, so include all possible dates in min and max fields.
+	 */
+	MMC_FIXUP_REV("VYL00M", 0x15, CID_OEMID_ANY,
+		      cid_rev(0, 0x25, 1997, 1), cid_rev(0, 0x25, 2012, 12),
+		      add_quirk_mmc, MMC_QUIRK_SAMSUNG_WL_PATCH),
+	MMC_FIXUP_REV("KYL00M", 0x15, CID_OEMID_ANY,
+		      cid_rev(0, 0x25, 1997, 1), cid_rev(0, 0x25, 2012, 12),
+		      add_quirk_mmc, MMC_QUIRK_SAMSUNG_WL_PATCH),
+	MMC_FIXUP_REV("MAG4FA", 0x15, CID_OEMID_ANY,
+		      cid_rev(0, 0x25, 1997, 1), cid_rev(0, 0x25, 2012, 12),
+		      add_quirk_mmc, MMC_QUIRK_SAMSUNG_WL_PATCH),
+
+	/*
+	 * Samsung "M8G2FA" chips with firmware revision 0x11 have a
+	 * "P17 corruption" bug which is addressed by a firmware patch found
+	 * in Barnes and Noble's Nook Color 1.4.3 kernel source.
+	 */
+	MMC_FIXUP_REV("M8G2FA", 0x15, CID_OEMID_ANY,
+		      cid_rev(0, 0x11, 1997, 1), cid_rev(0, 0x11, 2012, 12),
+		      add_quirk_mmc, MMC_QUIRK_SAMSUNG_P17_PATCH),
+	END_FIXUP
+};
+
 /*
  * Handle the detection and initialisation of a card.
  *
@@ -627,6 +660,10 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 		err = mmc_decode_cid(card);
 		if (err)
 			goto free_card;
+		/* Detect on first access quirky cards that need help when
+		 * powered-on
+		 */
+		mmc_fixup_device(card, mmc_fixups);
 	}
 
 	/*
@@ -826,7 +863,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 			 *
 			 * WARNING: eMMC rules are NOT the same as SD DDR
 			 */
-			if (ddr == EXT_CSD_CARD_TYPE_DDR_1_2V) {
+			if (ddr == MMC_1_2V_DDR_MODE) {
 				err = mmc_set_signal_voltage(host,
 					MMC_SIGNAL_VOLTAGE_120, 0);
 				if (err)
@@ -842,6 +879,18 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 		host->card = card;
 
 	mmc_free_ext_csd(ext_csd);
+
+	/*
+	 * Patch the firmware in certain Samsung emmc chips to fix a
+	 * wear leveling bug.
+	 */
+	if (card->quirks & MMC_QUIRK_SAMSUNG_WL_PATCH)
+		mmc_fixup_samsung_fw_wl(card);
+
+	/* Patch a "P17 corruption" bug in Samsung M8G2FA eMMC devices. */
+	if (card->quirks & MMC_QUIRK_SAMSUNG_P17_PATCH)
+		mmc_fixup_samsung_fw_p17(card);
+
 	return 0;
 
 free_card:
@@ -889,6 +938,7 @@ static void mmc_detect(struct mmc_host *host)
 
 		mmc_claim_host(host);
 		mmc_detach_bus(host);
+		mmc_power_off(host);
 		mmc_release_host(host);
 	}
 }

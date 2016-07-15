@@ -31,6 +31,7 @@
 /** struct ip_options - IP Options
  *
  * @faddr - Saved first hop address
+ * @nexthop - Saved nexthop address in LSRR and SSRR
  * @is_data - Options in __data, rather than skb
  * @is_strictroute - Strict source route
  * @srr_is_hit - Packet destination addr was our one
@@ -41,6 +42,7 @@
  */
 struct ip_options {
 	__be32		faddr;
+	__be32		nexthop;
 	unsigned char	optlen;
 	unsigned char	srr;
 	unsigned char	rr;
@@ -87,11 +89,21 @@ struct inet_request_sock {
 				no_srccheck: 1;
 	kmemcheck_bitfield_end(flags);
 	struct ip_options_rcu	*opt;
+	u32                     ir_mark;
 };
 
 static inline struct inet_request_sock *inet_rsk(const struct request_sock *sk)
 {
 	return (struct inet_request_sock *)sk;
+}
+
+static inline u32 inet_request_mark(struct sock *sk, struct sk_buff *skb)
+{
+	if (!sk->sk_mark && sock_net(sk)->ipv4.sysctl_tcp_fwmark_accept) {
+		return skb->mark;
+	} else {
+		return sk->sk_mark;
+	}
 }
 
 struct inet_cork {
@@ -197,6 +209,7 @@ static inline void inet_sk_copy_descendant(struct sock *sk_to,
 extern int inet_sk_rebuild_header(struct sock *sk);
 
 extern u32 inet_ehash_secret;
+extern u32 ipv6_hash_secret;
 extern void build_ehash_secret(void);
 
 static inline unsigned int inet_ehashfn(struct net *net,

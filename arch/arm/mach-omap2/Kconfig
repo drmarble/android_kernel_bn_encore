@@ -274,28 +274,96 @@ config MACH_ENCORE
 	select REGULATOR_FIXED_VOLTAGE
 	select WLAN_POWER_EVT1
 
+if MACH_ENCORE
+
 choice
-	bool "MPU clock speed for Encore"
+	prompt "Orientation of Encore screen"
+	default ENCORE_ORIENTATION_PORTRAIT
+
+config ENCORE_ORIENTATION_PORTRAIT
+	bool "Portrait (natural) orientation"
+	help
+	  The natural orientation for a Nook Color (N key at the bottom).
+
+config ENCORE_ORIENTATION_LANDSCAPE
+	bool "Landscape orientation"
+	help
+	  Landscape orientation with the N key to the right.
+
+endchoice
+
+choice
+	prompt "Default refresh rate for Encore screen"
+	default ENCORE_DEFAULT_REFRESH_90HZ
+
+config ENCORE_DEFAULT_REFRESH_54HZ
+	bool "54 Hz"
+	help
+	  Default to 54 Hz refresh rate with timings allowing
+	  CONFIG_OMAP2_DSS_MIN_FCK_PER_PCK=4.  Recommended if you intend to use
+	  DSSCOMP and want working 720p video display.
+
+config ENCORE_DEFAULT_REFRESH_60HZ
+	bool "60 Hz"
+	help
+	  Default to 60 Hz refresh rate with timings allowing
+	  CONFIG_OMAP2_DSS_MIN_FCK_PER_PCK=4.  Not recommended due to severe
+	  strobing effects with the backlight.
+
+config ENCORE_DEFAULT_REFRESH_90HZ
+	bool "90 Hz"
+	help
+	  Default to 90 Hz refresh rate with timings allowing
+	  CONFIG_OMAP2_DSS_MIN_FCK_PER_PCK=2.  Recommended if not using
+	  DSSCOMP.
+
+endchoice
+
+config ENCORE_L3_UNDERCLOCK
+	bool
+
+config ENCORE_MPU_DISABLE_1000MHZ
+	bool
+
+config ENCORE_MPU_ENABLE_1100MHZ
+	bool
+
+config ENCORE_MPU_ENABLE_1200MHZ
+	bool
+
+choice
+	prompt "MPU clock speed for Encore"
 	default ENCORE_MPU_1000MHZ
-	depends on MACH_ENCORE
 
 config ENCORE_MPU_STOCK
 	bool "800 MHz (stock clock speed for OMAP3621 and Encore)"
-	depends on MACH_ENCORE
+	select ENCORE_MPU_DISABLE_1000MHZ
+	select ENCORE_L3_UNDERCLOCK
 
 config ENCORE_MPU_1000MHZ
-	bool "1000 MHz (stock clock speed for OMAP3630)"
-	depends on MACH_ENCORE
+	bool "1000 MHz overclock with OMAP3621 L3 clock"
+	select ENCORE_L3_UNDERCLOCK
 
 config ENCORE_MPU_1100MHZ
-	bool "1100 MHz overclock"
-	depends on MACH_ENCORE
+	bool "1100 MHz overclock with OMAP3621 L3 clock"
+	select ENCORE_MPU_ENABLE_1100MHZ
+	select ENCORE_L3_UNDERCLOCK
 
 config ENCORE_MPU_1200MHZ
-	bool "1200 MHz overclock"
-	depends on MACH_ENCORE
+	bool "1200 MHz overclock with OMAP3621 L3 clock"
+	select ENCORE_MPU_ENABLE_1200MHZ
+	select ENCORE_L3_UNDERCLOCK
+
+config ENCORE_MPU_1000MHZ_HIL3
+	bool "1000 MHz with OMAP3630 L3 clock (stock clocks for OMAP3630)"
+
+config ENCORE_MPU_1100MHZ_HIL3
+	bool "1100 MHz overclock with OMAP3630 L3 clock"
+	select ENCORE_MPU_ENABLE_1100MHZ
 
 endchoice
+
+endif
 
 config MACH_CM_T35
 	bool "CompuLab CM-T35 module"
@@ -402,6 +470,7 @@ config MACH_OMAP4_PANDA
 config OMAP3_EMU
 	bool "OMAP3 debugging peripherals"
 	depends on ARCH_OMAP3
+	select ARM_AMBA
 	select OC_ETM
 	help
 	  Say Y here to enable debugging hardware of omap3
